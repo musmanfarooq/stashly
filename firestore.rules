@@ -1,0 +1,78 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isSignedIn() &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+    }
+
+    function ownerUnchanged() {
+      return request.resource.data.userId == resource.data.userId;
+    }
+
+    // USERS — each user reads/writes only their own doc.
+    // isAdmin can never be set or changed by the client; only via the
+    // Firebase console (2.1), which uses the Admin SDK and bypasses these rules.
+    match /users/{userId} {
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId)
+                    && request.resource.data.isAdmin == false;
+      allow update: if isOwner(userId)
+                    && request.resource.data.isAdmin == resource.data.isAdmin;
+      allow delete: if false;
+    }
+
+    // TRANSACTIONS — source of truth for buys/sells (2.2).
+    // A locked (sold) record can never be updated again, by anyone, for any reason.
+    // No document in this collection is ever deleted.
+    match /transactions/{transactionId} {
+      allow read:   if isOwner(resource.data.userId);
+      allow create: if isOwner(request.resource.data.userId);
+      allow update: if isOwner(resource.data.userId)
+                    && resource.data.locked != true
+                    && ownerUnchanged();
+      allow delete: if false;
+    }
+
+    // HOLDINGS — denormalized per-symbol summary, fully owned by the user (3.2).
+    match /holdings/{holdingId} {
+      allow read:   if isOwner(resource.data.userId);
+      allow create: if isOwner(request.resource.data.userId);
+      allow update: if isOwner(resource.data.userId) && ownerUnchanged();
+      allow delete: if isOwner(resource.data.userId);
+    }
+
+    // TYPES — category dropdown values (2.5). Assumed per-user; change the
+    // read rule to isSignedIn() if these should be global/shared instead.
+    match /types/{typeId} {
+      allow read:   if isOwner(resource.data.userId);
+      allow create: if isOwner(request.resource.data.userId);
+      allow update: if isOwner(resource.data.userId) && ownerUnchanged();
+      allow delete: if isOwner(resource.data.userId);
+    }
+
+    // CURRENT PRICES — global, shared across all users (2.10).
+    // Anyone signed in can read; only admins can write, in any form.
+    match /currentPrices/{symbol} {
+      allow read:  if isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    // DIVIDENDS — permanently immutable once created (2.11).
+    match /dividends/{dividendId} {
+      allow read:   if isOwner(resource.data.userId);
+      allow create: if isOwner(request.resource.data.userId);
+      allow update: if false;
+      allow delete: if false;
+    }
+  }
+}
