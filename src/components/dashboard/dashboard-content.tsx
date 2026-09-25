@@ -16,7 +16,7 @@ import {
   computeTotalRealizedPL,
   computeTotalUnrealizedPL,
 } from "@/lib/portfolio-stats";
-import { formatPKR } from "@/lib/format";
+import { useDisplayCurrency } from "@/hooks/use-display-currency";
 import { SummaryCard } from "./summary-card";
 import { AssetGraphsPanel } from "./asset-graphs-panel";
 
@@ -25,6 +25,8 @@ interface DashboardContentProps {
 }
 
 export function DashboardContent({ userId }: DashboardContentProps) {
+  const { formatAmount: formatStockAmount } = useDisplayCurrency("stock");
+  const { formatAmount: formatCryptoAmount } = useDisplayCurrency("crypto");
   const stockQuery = useGetTransactionsQuery({ userId, assetClass: "stock" });
   const cryptoQuery = useGetTransactionsQuery({ userId, assetClass: "crypto" });
   const pricesQuery = useGetCurrentPricesQuery();
@@ -71,8 +73,8 @@ export function DashboardContent({ userId }: DashboardContentProps) {
           icon={Wallet}
           title="Total invested (cost basis)"
           rows={[
-            { label: "Stocks", value: formatPKR(stockInvested) },
-            { label: "Crypto", value: formatPKR(cryptoInvested) },
+            { label: "Stocks", value: formatStockAmount(stockInvested) },
+            { label: "Crypto", value: formatCryptoAmount(cryptoInvested) },
           ]}
         />
         <SummaryCard
@@ -81,12 +83,12 @@ export function DashboardContent({ userId }: DashboardContentProps) {
           rows={[
             {
               label: "Stocks",
-              value: formatPKR(stockRealized),
+              value: formatStockAmount(stockRealized),
               valueClassName: stockRealized >= 0 ? "text-profit" : "text-loss",
             },
             {
               label: "Crypto",
-              value: formatPKR(cryptoRealized),
+              value: formatCryptoAmount(cryptoRealized),
               valueClassName: cryptoRealized >= 0 ? "text-profit" : "text-loss",
             },
           ]}
@@ -97,12 +99,12 @@ export function DashboardContent({ userId }: DashboardContentProps) {
           rows={[
             {
               label: "Stocks",
-              value: stockPriced.length > 0 ? formatPKR(stockUnrealized) : "—",
+              value: stockPriced.length > 0 ? formatStockAmount(stockUnrealized) : "—",
               valueClassName: stockUnrealized >= 0 ? "text-profit" : "text-loss",
             },
             {
               label: "Crypto",
-              value: cryptoPriced.length > 0 ? formatPKR(cryptoUnrealized) : "—",
+              value: cryptoPriced.length > 0 ? formatCryptoAmount(cryptoUnrealized) : "—",
               valueClassName: cryptoUnrealized >= 0 ? "text-profit" : "text-loss",
             },
           ]}
@@ -118,7 +120,7 @@ export function DashboardContent({ userId }: DashboardContentProps) {
         <SummaryCard
           icon={Banknote}
           title="Total dividends earned"
-          rows={[{ label: "Stocks", value: formatPKR(totalDividends), valueClassName: "text-profit" }]}
+          rows={[{ label: "Stocks", value: formatStockAmount(totalDividends), valueClassName: "text-profit" }]}
         />
       </div>
 

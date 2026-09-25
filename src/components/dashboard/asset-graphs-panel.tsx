@@ -76,7 +76,7 @@ export function AssetGraphsPanel({ userId, assetClass }: AssetGraphsPanelProps) 
             <CardTitle className="text-sm font-medium">Allocation by type</CardTitle>
           </CardHeader>
           <CardContent>
-            <AllocationChart data={allocation} />
+            <AllocationChart data={allocation} assetClass={assetClass} />
           </CardContent>
         </Card>
         <Card>
@@ -84,7 +84,7 @@ export function AssetGraphsPanel({ userId, assetClass }: AssetGraphsPanelProps) 
             <CardTitle className="text-sm font-medium">Invested vs realized P/L</CardTitle>
           </CardHeader>
           <CardContent>
-            <InvestedVsRealizedChart invested={invested} realizedPL={realizedPL} />
+            <InvestedVsRealizedChart assetClass={assetClass} invested={invested} realizedPL={realizedPL} />
           </CardContent>
         </Card>
         <Card>
@@ -111,6 +111,7 @@ export function AssetGraphsPanel({ userId, assetClass }: AssetGraphsPanelProps) 
               />
             ) : (
               <TwoMetricBarChart
+                assetClass={assetClass}
                 leftLabel="Invested"
                 leftValue={invested}
                 rightLabel="Current value"
@@ -133,6 +134,7 @@ export function AssetGraphsPanel({ userId, assetClass }: AssetGraphsPanelProps) 
               />
             ) : (
               <TwoMetricBarChart
+                assetClass={assetClass}
                 leftLabel="Realized"
                 leftValue={realizedPL}
                 leftColor={realizedPL >= 0 ? "var(--profit)" : "var(--loss)"}
@@ -147,7 +149,7 @@ export function AssetGraphsPanel({ userId, assetClass }: AssetGraphsPanelProps) 
             <CardTitle className="text-sm font-medium">Top movers</CardTitle>
           </CardHeader>
           <CardContent>
-            <TopMoversChart positions={pricedPositions} />
+            <TopMoversChart assetClass={assetClass} positions={pricedPositions} />
           </CardContent>
         </Card>
       </div>
@@ -157,7 +159,7 @@ export function AssetGraphsPanel({ userId, assetClass }: AssetGraphsPanelProps) 
           <CardTitle className="text-sm font-medium">Allocation by current value</CardTitle>
         </CardHeader>
         <CardContent>
-          <AllocationChart data={allocationByCurrentValue} />
+          <AllocationChart data={allocationByCurrentValue} assetClass={assetClass} />
         </CardContent>
       </Card>
     </div>

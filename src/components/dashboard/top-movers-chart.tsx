@@ -9,19 +9,24 @@ import {
   type ChartConfig,
 } from "@/components/ui/chart";
 import { EmptyState } from "@/components/shared/empty-state";
-import { formatPKR } from "@/lib/format";
+import { useDisplayCurrency } from "@/hooks/use-display-currency";
+import { formatCurrencyAmount } from "@/lib/format";
 import type { PricedPosition } from "@/lib/portfolio-stats";
+import type { AssetClass } from "@/types/transaction";
 
 const chartConfig: ChartConfig = {
-  unrealizedPL: { label: "Unrealized P/L (PKR)" },
+  unrealizedPL: { label: "Unrealized P/L" },
 };
 
 interface TopMoversChartProps {
+  assetClass: AssetClass;
   positions: PricedPosition[];
   limit?: number;
 }
 
-export function TopMoversChart({ positions, limit = 5 }: TopMoversChartProps) {
+export function TopMoversChart({ assetClass, positions, limit = 5 }: TopMoversChartProps) {
+  const { convertAmount, currency } = useDisplayCurrency(assetClass);
+
   if (positions.length === 0) {
     return (
       <EmptyState
@@ -40,7 +45,7 @@ export function TopMoversChart({ positions, limit = 5 }: TopMoversChartProps) {
     .reverse();
   const data = [...gainers, ...losers]
     .sort((a, b) => a.unrealizedPL - b.unrealizedPL)
-    .map((p) => ({ symbol: p.symbol, unrealizedPL: p.unrealizedPL }));
+    .map((p) => ({ symbol: p.symbol, unrealizedPL: convertAmount(p.unrealizedPL) }));
 
   if (data.length === 0) {
     return (
@@ -52,6 +57,9 @@ export function TopMoversChart({ positions, limit = 5 }: TopMoversChartProps) {
     );
   }
 
+  // data[].unrealizedPL is already converted — format only, don't convert again.
+  const formatAlreadyConverted = (value: number) => formatCurrencyAmount(value, currency);
+
   return (
     <ChartContainer config={chartConfig} className="max-h-72 w-full">
       <BarChart data={data} layout="vertical" margin={{ left: 8 }}>
@@ -60,11 +68,16 @@ export function TopMoversChart({ positions, limit = 5 }: TopMoversChartProps) {
           type="number"
           tickLine={false}
           axisLine={false}
-          tickFormatter={(value: number) => formatPKR(value)}
+          tickFormatter={(value: number) => formatAlreadyConverted(value)}
         />
         <YAxis type="category" dataKey="symbol" tickLine={false} axisLine={false} width={60} />
         <ChartTooltip
-          content={<ChartTooltipContent hideLabel formatter={(value) => formatPKR(Number(value))} />}
+          content={
+            <ChartTooltipContent
+              hideLabel
+              formatter={(value) => formatAlreadyConverted(Number(value))}
+            />
+          }
         />
         <Bar dataKey="unrealizedPL" radius={4}>
           {data.map((entry) => (

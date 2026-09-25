@@ -18,6 +18,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { EmptyState } from "@/components/shared/empty-state";
+import { useDisplayCurrency } from "@/hooks/use-display-currency";
 import { exportTransactionHistoryPdf } from "@/lib/pdf/transaction-history-pdf";
 import { useGetTransactionsQuery } from "@/store/api/transactionsApi";
 import type { AssetClass } from "@/types/transaction";
@@ -29,6 +30,7 @@ interface TransactionHistoryTableProps {
 }
 
 export function TransactionHistoryTable({ userId, assetClass }: TransactionHistoryTableProps) {
+  const { convertAmount, currency } = useDisplayCurrency(assetClass);
   const { data: transactions, isLoading, isError } = useGetTransactionsQuery({
     userId,
     assetClass,
@@ -73,7 +75,11 @@ export function TransactionHistoryTable({ userId, assetClass }: TransactionHisto
       toast.error("Nothing to export yet.");
       return;
     }
-    exportTransactionHistoryPdf(transactions, assetClass, exportUpToDate || undefined);
+    exportTransactionHistoryPdf(transactions, assetClass, {
+      upToDate: exportUpToDate || undefined,
+      currency,
+      convertAmount,
+    });
     toast.success("Transaction history PDF downloaded");
   }
 
@@ -144,8 +150,8 @@ export function TransactionHistoryTable({ userId, assetClass }: TransactionHisto
               <TableHead>Symbol</TableHead>
               <TableHead>Action</TableHead>
               <TableHead className="text-right">{unitLabel}</TableHead>
-              <TableHead className="text-right">Price (PKR)</TableHead>
-              <TableHead className="text-right">Realized P/L (PKR)</TableHead>
+              <TableHead className="text-right">Price ({currency})</TableHead>
+              <TableHead className="text-right">Realized P/L ({currency})</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -167,11 +173,11 @@ export function TransactionHistoryTable({ userId, assetClass }: TransactionHisto
                   )}
                 </TableCell>
                 <TableCell className="text-right">{transaction.shares}</TableCell>
-                <TableCell className="text-right">{transaction.price.toFixed(2)}</TableCell>
+                <TableCell className="text-right">{convertAmount(transaction.price).toFixed(2)}</TableCell>
                 <TableCell className="text-right">
                   {transaction.action === "sell" && transaction.realizedPL !== null ? (
                     <span className={transaction.realizedPL >= 0 ? "text-profit" : "text-loss"}>
-                      {transaction.realizedPL.toFixed(2)}
+                      {convertAmount(transaction.realizedPL).toFixed(2)}
                     </span>
                   ) : (
                     <span className="text-muted-foreground">—</span>

@@ -12,6 +12,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { EmptyState } from "@/components/shared/empty-state";
+import { useDisplayCurrency } from "@/hooks/use-display-currency";
 import { useGetTransactionsQuery } from "@/store/api/transactionsApi";
 import type { AssetClass } from "@/types/transaction";
 import { assetUnitLabel } from "@/lib/asset-labels";
@@ -23,6 +24,7 @@ interface SoldTableProps {
 }
 
 export function SoldTable({ userId, assetClass, searchQuery = "" }: SoldTableProps) {
+  const { convertAmount, currency } = useDisplayCurrency(assetClass);
   const { data: transactions, isLoading, isError } = useGetTransactionsQuery({
     userId,
     assetClass,
@@ -81,9 +83,9 @@ export function SoldTable({ userId, assetClass, searchQuery = "" }: SoldTablePro
           <TableHead>Symbol</TableHead>
           <TableHead>Name</TableHead>
           <TableHead className="text-right">{unitLabel} sold</TableHead>
-          <TableHead className="text-right">Sell price (PKR)</TableHead>
+          <TableHead className="text-right">Sell price ({currency})</TableHead>
           <TableHead>Sell date</TableHead>
-          <TableHead className="text-right">Realized P/L (PKR)</TableHead>
+          <TableHead className="text-right">Realized P/L ({currency})</TableHead>
           <TableHead className="text-right">Status</TableHead>
         </TableRow>
       </TableHeader>
@@ -95,10 +97,10 @@ export function SoldTable({ userId, assetClass, searchQuery = "" }: SoldTablePro
               <TableCell className="font-medium">{sell.symbol}</TableCell>
               <TableCell className="text-muted-foreground">{sell.name}</TableCell>
               <TableCell className="text-right">{sell.shares}</TableCell>
-              <TableCell className="text-right">{sell.price.toFixed(2)}</TableCell>
+              <TableCell className="text-right">{convertAmount(sell.price).toFixed(2)}</TableCell>
               <TableCell>{sell.date}</TableCell>
               <TableCell className={`text-right ${pl >= 0 ? "text-profit" : "text-loss"}`}>
-                {pl.toFixed(2)}
+                {convertAmount(pl).toFixed(2)}
               </TableCell>
               <TableCell className="text-right">
                 <Badge variant="outline" className="gap-1">

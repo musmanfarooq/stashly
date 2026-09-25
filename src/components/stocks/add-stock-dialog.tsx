@@ -19,6 +19,7 @@ import { useAddBuyMutation } from "@/store/api/transactionsApi";
 import type { AssetClass } from "@/types/transaction";
 import {
   assetNamePlaceholder,
+  assetNativeCurrency,
   assetNoun,
   assetSymbolPlaceholder,
   assetUnitLabel,
@@ -141,7 +142,7 @@ export function AddStockDialog({ userId, assetClass }: AddStockDialogProps) {
                 />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="add-price">Price per unit (PKR)</Label>
+                <Label htmlFor="add-price">Price per unit ({assetNativeCurrency(assetClass)})</Label>
                 <Input
                   id="add-price"
                   type="number"

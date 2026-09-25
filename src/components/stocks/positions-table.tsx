@@ -12,6 +12,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { EmptyState } from "@/components/shared/empty-state";
+import { useDisplayCurrency } from "@/hooks/use-display-currency";
 import { computeActivePositions } from "@/lib/portfolio-stats";
 import { useGetCurrentPricesQuery } from "@/store/api/currentPricesApi";
 import { useGetTransactionsQuery } from "@/store/api/transactionsApi";
@@ -26,6 +27,7 @@ interface PositionsTableProps {
 }
 
 export function PositionsTable({ userId, assetClass, searchQuery = "" }: PositionsTableProps) {
+  const { convertAmount, currency } = useDisplayCurrency(assetClass);
   const { data: transactions, isLoading, isError } = useGetTransactionsQuery({
     userId,
     assetClass,
@@ -88,9 +90,9 @@ export function PositionsTable({ userId, assetClass, searchQuery = "" }: Positio
           <TableHead>Name</TableHead>
           <TableHead>Type</TableHead>
           <TableHead className="text-right">{assetUnitLabel(assetClass)} held</TableHead>
-          <TableHead className="text-right">Avg. cost (PKR)</TableHead>
-          <TableHead className="text-right">Current price (PKR)</TableHead>
-          <TableHead className="text-right">Unrealized P/L (PKR)</TableHead>
+          <TableHead className="text-right">Avg. cost ({currency})</TableHead>
+          <TableHead className="text-right">Current price ({currency})</TableHead>
+          <TableHead className="text-right">Unrealized P/L ({currency})</TableHead>
           <TableHead className="text-right">Action</TableHead>
         </TableRow>
       </TableHeader>
@@ -108,10 +110,10 @@ export function PositionsTable({ userId, assetClass, searchQuery = "" }: Positio
                 <Badge variant="secondary">{position.category}</Badge>
               </TableCell>
               <TableCell className="text-right">{position.totalShares}</TableCell>
-              <TableCell className="text-right">{position.avgCost.toFixed(2)}</TableCell>
+              <TableCell className="text-right">{convertAmount(position.avgCost).toFixed(2)}</TableCell>
               <TableCell className="text-right">
                 {currentPrice !== undefined ? (
-                  currentPrice.toFixed(2)
+                  convertAmount(currentPrice).toFixed(2)
                 ) : (
                   <span className="text-muted-foreground">—</span>
                 )}
@@ -119,7 +121,7 @@ export function PositionsTable({ userId, assetClass, searchQuery = "" }: Positio
               <TableCell className="text-right">
                 {unrealizedPL !== null ? (
                   <span className={unrealizedPL >= 0 ? "text-profit" : "text-loss"}>
-                    {unrealizedPL.toFixed(2)}
+                    {convertAmount(unrealizedPL).toFixed(2)}
                   </span>
                 ) : (
                   <span className="text-muted-foreground">—</span>

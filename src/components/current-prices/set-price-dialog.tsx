@@ -22,6 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { assetNativeCurrency } from "@/lib/asset-labels";
 import { useSetCurrentPriceMutation } from "@/store/api/currentPricesApi";
 import type { AssetClass } from "@/types/transaction";
 
@@ -107,7 +108,7 @@ export function SetPriceDialog({ userId, defaultAssetClass }: SetPriceDialogProp
               </Select>
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="price-value">Current price (PKR)</Label>
+              <Label htmlFor="price-value">Current price ({assetNativeCurrency(assetClass)})</Label>
               <Input
                 id="price-value"
                 type="number"

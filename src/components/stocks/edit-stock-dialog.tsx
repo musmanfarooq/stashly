@@ -17,7 +17,7 @@ import { Label } from "@/components/ui/label";
 import { CategorySelect } from "./category-select";
 import { useEditBuyMutation } from "@/store/api/transactionsApi";
 import type { Transaction } from "@/types/transaction";
-import { assetUnitLabel } from "@/lib/asset-labels";
+import { assetNativeCurrency, assetUnitLabel } from "@/lib/asset-labels";
 
 interface EditStockDialogProps {
   userId: string;
@@ -112,7 +112,9 @@ export function EditStockDialog({ userId, transaction }: EditStockDialogProps) {
                 />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="edit-price">Price per unit (PKR)</Label>
+                <Label htmlFor="edit-price">
+                  Price per unit ({assetNativeCurrency(transaction.assetClass)})
+                </Label>
                 <Input
                   id="edit-price"
                   type="number"

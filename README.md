@@ -83,14 +83,6 @@ src/
   types/            Shared TypeScript types
 ```
 
-## Out of scope (by design)
-
-- Automated live/current price feed (the manual current-price page is an explicit interim stopgap)
-- Brokerage/transaction fee tracking
-- Multi-currency support (PKR only)
-- CSV import/export
-- Historical portfolio value timeline
-
 ## License
 
 MIT

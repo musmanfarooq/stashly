@@ -12,8 +12,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { EmptyState } from "@/components/shared/empty-state";
-import { assetUnitLabel } from "@/lib/asset-labels";
-import { formatPKR } from "@/lib/format";
+import { assetNativeCurrency, assetUnitLabel } from "@/lib/asset-labels";
+import { formatCurrencyAmount } from "@/lib/format";
 import { computeActivePositions } from "@/lib/portfolio-stats";
 import { useGetCurrentPricesQuery } from "@/store/api/currentPricesApi";
 import { useGetTransactionsQuery } from "@/store/api/transactionsApi";
@@ -108,13 +108,17 @@ export function CurrentPricesTable({ userId, assetClass }: CurrentPricesTablePro
   }, 0);
 
   const unitLabel = assetUnitLabel(assetClass);
+  // This page always shows the asset class's fixed native currency (PKR for
+  // stocks, USD for crypto), never the admin's own display preference — it's
+  // the tool for entering the authoritative PSX/crypto-market price.
+  const nativeCurrency = assetNativeCurrency(assetClass);
 
   return (
     <div className="space-y-3">
       <p className="text-sm text-muted-foreground">
         Portfolio-wide unrealized P/L (priced symbols only):{" "}
         <span className={totalUnrealized >= 0 ? "text-profit" : "text-loss"}>
-          {formatPKR(totalUnrealized)}
+          {formatCurrencyAmount(totalUnrealized, nativeCurrency)}
         </span>
       </p>
       <Table>
@@ -124,9 +128,9 @@ export function CurrentPricesTable({ userId, assetClass }: CurrentPricesTablePro
             <TableHead>Name</TableHead>
             <TableHead>Type</TableHead>
             <TableHead className="text-right">{unitLabel} held</TableHead>
-            <TableHead className="text-right">Avg. buy price (PKR)</TableHead>
-            <TableHead>Current price (PKR)</TableHead>
-            <TableHead className="text-right">Unrealized P/L (PKR)</TableHead>
+            <TableHead className="text-right">Avg. buy price ({nativeCurrency})</TableHead>
+            <TableHead>Current price ({nativeCurrency})</TableHead>
+            <TableHead className="text-right">Unrealized P/L ({nativeCurrency})</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>

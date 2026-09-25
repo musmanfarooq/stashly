@@ -2,8 +2,9 @@
 
 import { PieChart as PieIcon } from "lucide-react";
 import { EmptyState } from "@/components/shared/empty-state";
-import { formatPKR } from "@/lib/format";
+import { useDisplayCurrency } from "@/hooks/use-display-currency";
 import type { CategoryAllocation } from "@/lib/portfolio-stats";
+import type { AssetClass } from "@/types/transaction";
 
 // Category names are arbitrary user-entered text (2.5), so they can't safely
 // become CSS custom-property keys — colors are assigned by array index instead.
@@ -39,9 +40,12 @@ function describeDonutSlice(
 
 interface AllocationChartProps {
   data: CategoryAllocation[];
+  assetClass: AssetClass;
 }
 
-export function AllocationChart({ data }: AllocationChartProps) {
+export function AllocationChart({ data, assetClass }: AllocationChartProps) {
+  const { formatAmount } = useDisplayCurrency(assetClass);
+
   if (data.length === 0) {
     return (
       <EmptyState
@@ -82,7 +86,7 @@ export function AllocationChart({ data }: AllocationChartProps) {
       <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} role="img" aria-label="Allocation by type">
         {slices.map((slice) => (
           <path key={slice.category} d={slice.path} fill={slice.color} stroke="var(--surface)" strokeWidth={2}>
-            <title>{`${slice.category}: ${formatPKR(slice.value)}`}</title>
+            <title>{`${slice.category}: ${formatAmount(slice.value)}`}</title>
           </path>
         ))}
       </svg>
@@ -94,7 +98,7 @@ export function AllocationChart({ data }: AllocationChartProps) {
               style={{ backgroundColor: slice.color }}
             />
             <span className="text-foreground">{slice.category}</span>
-            <span className="text-muted-foreground">{formatPKR(slice.value)}</span>
+            <span className="text-muted-foreground">{formatAmount(slice.value)}</span>
           </li>
         ))}
       </ul>

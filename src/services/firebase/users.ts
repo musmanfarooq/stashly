@@ -2,6 +2,7 @@ import { Timestamp, doc, getDoc, setDoc } from "firebase/firestore";
 import type { User } from "firebase/auth";
 import { db } from "./config";
 import type { AppUser } from "@/types/user";
+import { DEFAULT_CURRENCY, isSupportedCurrency, type CurrencyCode } from "@/lib/currency";
 
 const SESSION_MAX_AGE_MS = 14 * 24 * 60 * 60 * 1000;
 
@@ -11,6 +12,7 @@ interface UserDoc {
   displayName: string | null;
   photoURL: string | null;
   isAdmin: boolean;
+  currency?: string;
   lastLoginAt: Timestamp;
   createdAt: Timestamp;
 }
@@ -22,6 +24,7 @@ function toAppUser(data: UserDoc): AppUser {
     displayName: data.displayName,
     photoURL: data.photoURL,
     isAdmin: data.isAdmin,
+    currency: data.currency && isSupportedCurrency(data.currency) ? data.currency : DEFAULT_CURRENCY,
     lastLoginAt: data.lastLoginAt.toMillis(),
     createdAt: data.createdAt.toMillis(),
   };
@@ -48,7 +51,7 @@ export async function recordSignIn(user: User): Promise<AppUser> {
 
   const data: UserDoc = snapshot.exists()
     ? { ...(snapshot.data() as UserDoc), ...baseFields(user), lastLoginAt: now }
-    : { ...baseFields(user), isAdmin: false, lastLoginAt: now, createdAt: now };
+    : { ...baseFields(user), isAdmin: false, currency: DEFAULT_CURRENCY, lastLoginAt: now, createdAt: now };
 
   await setDoc(ref, data, { merge: true });
   return toAppUser(data);
@@ -64,4 +67,10 @@ export async function loadUserDoc(user: User): Promise<AppUser> {
   }
 
   return toAppUser(snapshot.data() as UserDoc);
+}
+
+/** Display-currency preference only — never touches isAdmin, satisfying the users-collection security rule. */
+export async function updateUserCurrency(uid: string, currency: CurrencyCode): Promise<void> {
+  const ref = doc(db, "users", uid);
+  await setDoc(ref, { currency }, { merge: true });
 }

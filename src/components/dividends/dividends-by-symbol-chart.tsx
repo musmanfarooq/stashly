@@ -9,13 +9,14 @@ import {
   type ChartConfig,
 } from "@/components/ui/chart";
 import { EmptyState } from "@/components/shared/empty-state";
-import { formatPKR } from "@/lib/format";
+import { useDisplayCurrency } from "@/hooks/use-display-currency";
+import { formatCurrencyAmount } from "@/lib/format";
 import type { Dividend } from "@/types/dividend";
 
 const PALETTE = ["var(--chart-1)", "var(--chart-2)", "var(--chart-3)", "var(--chart-4)", "var(--chart-5)"];
 
 const chartConfig: ChartConfig = {
-  value: { label: "Dividends (PKR)" },
+  value: { label: "Dividends" },
 };
 
 interface DividendsBySymbolChartProps {
@@ -23,13 +24,14 @@ interface DividendsBySymbolChartProps {
 }
 
 export function DividendsBySymbolChart({ dividends }: DividendsBySymbolChartProps) {
+  const { convertAmount, currency } = useDisplayCurrency("stock");
   const totals = new Map<string, number>();
   for (const dividend of dividends) {
     totals.set(dividend.symbol, (totals.get(dividend.symbol) ?? 0) + dividend.amount);
   }
 
   const data = Array.from(totals.entries())
-    .map(([symbol, value]) => ({ symbol, value }))
+    .map(([symbol, value]) => ({ symbol, value: convertAmount(value) }))
     .sort((a, b) => b.value - a.value);
 
   if (data.length === 0) {
@@ -42,6 +44,9 @@ export function DividendsBySymbolChart({ dividends }: DividendsBySymbolChartProp
     );
   }
 
+  // data[].value is already converted — format only, don't convert again.
+  const formatAlreadyConverted = (value: number) => formatCurrencyAmount(value, currency);
+
   return (
     <ChartContainer config={chartConfig} className="max-h-72 w-full">
       <BarChart data={data} margin={{ left: 8 }}>
@@ -51,10 +56,15 @@ export function DividendsBySymbolChart({ dividends }: DividendsBySymbolChartProp
           tickLine={false}
           axisLine={false}
           width={90}
-          tickFormatter={(value: number) => formatPKR(value)}
+          tickFormatter={(value: number) => formatAlreadyConverted(value)}
         />
         <ChartTooltip
-          content={<ChartTooltipContent hideLabel formatter={(value) => formatPKR(Number(value))} />}
+          content={
+            <ChartTooltipContent
+              hideLabel
+              formatter={(value) => formatAlreadyConverted(Number(value))}
+            />
+          }
         />
         <Bar dataKey="value" radius={4}>
           {data.map((entry, index) => (

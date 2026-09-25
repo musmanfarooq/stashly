@@ -10,6 +10,7 @@ import {
   LineChart,
   Layers,
   LogOut,
+  Settings,
   Tag,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -26,6 +27,7 @@ const BASE_NAV_ITEMS = [
   { href: "/holdings", label: "Holdings", icon: Layers },
   { href: "/transactions", label: "Transactions", icon: History },
   { href: "/dividends", label: "Dividends", icon: Banknote },
+  { href: "/settings", label: "Settings", icon: Settings },
 ];
 
 const ADMIN_NAV_ITEM = { href: "/current-prices", label: "Current Prices", icon: Tag };

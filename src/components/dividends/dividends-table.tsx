@@ -12,6 +12,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { EmptyState } from "@/components/shared/empty-state";
+import { useDisplayCurrency } from "@/hooks/use-display-currency";
 import { useGetDividendsQuery } from "@/store/api/dividendsApi";
 
 interface DividendsTableProps {
@@ -19,6 +20,7 @@ interface DividendsTableProps {
 }
 
 export function DividendsTable({ userId }: DividendsTableProps) {
+  const { convertAmount, currency } = useDisplayCurrency("stock");
   const { data: dividends, isLoading, isError } = useGetDividendsQuery(userId);
 
   if (isLoading) {
@@ -55,7 +57,7 @@ export function DividendsTable({ userId }: DividendsTableProps) {
       <TableHeader>
         <TableRow>
           <TableHead>Symbol</TableHead>
-          <TableHead className="text-right">Amount (PKR)</TableHead>
+          <TableHead className="text-right">Amount ({currency})</TableHead>
           <TableHead>Date received</TableHead>
           <TableHead className="text-right">Status</TableHead>
         </TableRow>
@@ -64,7 +66,9 @@ export function DividendsTable({ userId }: DividendsTableProps) {
         {dividends.map((dividend) => (
           <TableRow key={dividend.id}>
             <TableCell className="font-medium">{dividend.symbol}</TableCell>
-            <TableCell className="text-right text-profit">{dividend.amount.toFixed(2)}</TableCell>
+            <TableCell className="text-right text-profit">
+              {convertAmount(dividend.amount).toFixed(2)}
+            </TableCell>
             <TableCell>{dividend.date}</TableCell>
             <TableCell className="text-right">
               <Badge variant="outline" className="gap-1">

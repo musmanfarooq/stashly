@@ -6,12 +6,13 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { AddDividendDialog } from "@/components/dividends/add-dividend-dialog";
 import { DividendsBySymbolChart } from "@/components/dividends/dividends-by-symbol-chart";
 import { DividendsTable } from "@/components/dividends/dividends-table";
-import { formatPKR } from "@/lib/format";
+import { useDisplayCurrency } from "@/hooks/use-display-currency";
 import { useGetDividendsQuery } from "@/store/api/dividendsApi";
 import { useAppSelector } from "@/store/hooks";
 
 export default function DividendsPage() {
   const user = useAppSelector((state) => state.auth.user);
+  const { formatAmount } = useDisplayCurrency("stock");
   const { data: dividends, isLoading } = useGetDividendsQuery(user?.uid ?? "", { skip: !user });
 
   if (!user) return null;
@@ -41,7 +42,7 @@ export default function DividendsPage() {
           {isLoading ? (
             <Skeleton className="h-8 w-32" />
           ) : (
-            <p className="text-2xl font-semibold text-profit">{formatPKR(total)}</p>
+            <p className="text-2xl font-semibold text-profit">{formatAmount(total)}</p>
           )}
         </CardContent>
       </Card>

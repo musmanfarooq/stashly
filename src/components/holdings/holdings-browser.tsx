@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LotsTable } from "@/components/stocks/lots-table";
 import { SoldTable } from "@/components/stocks/sold-table";
+import { useDisplayCurrency } from "@/hooks/use-display-currency";
 import { exportHoldingsPdf } from "@/lib/pdf/holdings-pdf";
 import { useGetTransactionsQuery } from "@/store/api/transactionsApi";
 import type { AssetClass } from "@/types/transaction";
@@ -20,6 +21,7 @@ interface HoldingsBrowserProps {
 export function HoldingsBrowser({ userId, assetClass }: HoldingsBrowserProps) {
   const [tab, setTab] = useState<"active" | "sold">("active");
   const [search, setSearch] = useState("");
+  const { currency, convertAmount } = useDisplayCurrency(assetClass);
   const { data: transactions, isFetching } = useGetTransactionsQuery({ userId, assetClass });
 
   function handleDownload() {
@@ -27,7 +29,7 @@ export function HoldingsBrowser({ userId, assetClass }: HoldingsBrowserProps) {
       toast.error("Nothing to export yet.");
       return;
     }
-    exportHoldingsPdf(transactions, assetClass);
+    exportHoldingsPdf(transactions, assetClass, { currency, convertAmount });
     toast.success("Holdings PDF downloaded");
   }
 

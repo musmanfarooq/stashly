@@ -2,6 +2,13 @@ import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import type { AssetClass, Transaction } from "@/types/transaction";
 import { assetNoun, assetUnitLabel } from "@/lib/asset-labels";
+import type { CurrencyCode } from "@/lib/currency";
+
+interface ExportOptions {
+  upToDate?: string;
+  currency: CurrencyCode;
+  convertAmount: (pkrAmount: number) => number;
+}
 
 /**
  * Client-side generation: no Cloud Function/backend infra exists in this
@@ -11,7 +18,7 @@ import { assetNoun, assetUnitLabel } from "@/lib/asset-labels";
 export function exportTransactionHistoryPdf(
   transactions: Transaction[],
   assetClass: AssetClass,
-  upToDate?: string,
+  { upToDate, currency, convertAmount }: ExportOptions,
 ): void {
   const filtered = upToDate ? transactions.filter((t) => t.date <= upToDate) : transactions;
   const sorted = [...filtered].sort(
@@ -34,14 +41,14 @@ export function exportTransactionHistoryPdf(
 
   autoTable(doc, {
     startY: 28,
-    head: [["Date", "Symbol", "Action", unitLabel, "Price (PKR)", "Realized P/L (PKR)"]],
+    head: [["Date", "Symbol", "Action", unitLabel, `Price (${currency})`, `Realized P/L (${currency})`]],
     body: sorted.map((t) => [
       t.date,
       t.symbol,
       t.action === "buy" ? "Buy" : "Sell",
       String(t.shares),
-      t.price.toFixed(2),
-      t.action === "sell" && t.realizedPL !== null ? t.realizedPL.toFixed(2) : "—",
+      convertAmount(t.price).toFixed(2),
+      t.action === "sell" && t.realizedPL !== null ? convertAmount(t.realizedPL).toFixed(2) : "—",
     ]),
   });
 

@@ -7,13 +7,16 @@ import {
   ChartTooltipContent,
   type ChartConfig,
 } from "@/components/ui/chart";
-import { formatPKR } from "@/lib/format";
+import { useDisplayCurrency } from "@/hooks/use-display-currency";
+import { formatCurrencyAmount } from "@/lib/format";
+import type { AssetClass } from "@/types/transaction";
 
 const chartConfig: ChartConfig = {
-  value: { label: "Amount (PKR)" },
+  value: { label: "Amount" },
 };
 
 interface TwoMetricBarChartProps {
+  assetClass: AssetClass;
   leftLabel: string;
   leftValue: number;
   leftColor?: string;
@@ -23,6 +26,7 @@ interface TwoMetricBarChartProps {
 }
 
 export function TwoMetricBarChart({
+  assetClass,
   leftLabel,
   leftValue,
   leftColor = "var(--chart-1)",
@@ -30,10 +34,15 @@ export function TwoMetricBarChart({
   rightValue,
   rightColor,
 }: TwoMetricBarChartProps) {
+  const { convertAmount, currency } = useDisplayCurrency(assetClass);
   const data = [
-    { metric: leftLabel, value: leftValue },
-    { metric: rightLabel, value: rightValue },
+    { metric: leftLabel, value: convertAmount(leftValue) },
+    { metric: rightLabel, value: convertAmount(rightValue) },
   ];
+  // data[].value is already converted — format only, don't convert again.
+  const formatAlreadyConverted = (value: number) => formatCurrencyAmount(value, currency);
+  // Sign is invariant under currency conversion (rates are always positive),
+  // so it's safe to branch on the original native-currency value here.
   const resolvedRightColor = rightColor ?? (rightValue >= 0 ? "var(--profit)" : "var(--loss)");
 
   return (
@@ -45,10 +54,15 @@ export function TwoMetricBarChart({
           tickLine={false}
           axisLine={false}
           width={90}
-          tickFormatter={(value: number) => formatPKR(value)}
+          tickFormatter={(value: number) => formatAlreadyConverted(value)}
         />
         <ChartTooltip
-          content={<ChartTooltipContent hideLabel formatter={(value) => formatPKR(Number(value))} />}
+          content={
+            <ChartTooltipContent
+              hideLabel
+              formatter={(value) => formatAlreadyConverted(Number(value))}
+            />
+          }
         />
         <Bar dataKey="value" radius={4}>
           <Cell fill={leftColor} />

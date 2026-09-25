@@ -2,13 +2,23 @@ import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import type { AssetClass, Transaction } from "@/types/transaction";
 import { assetNoun, assetUnitLabel } from "@/lib/asset-labels";
+import type { CurrencyCode } from "@/lib/currency";
 
 interface JsPdfWithAutoTable extends jsPDF {
   lastAutoTable?: { finalY: number };
 }
 
+interface ExportOptions {
+  currency: CurrencyCode;
+  convertAmount: (pkrAmount: number) => number;
+}
+
 /** Exports the full current Holdings View (Active + Sold, per 2.7) — no date filter, always unfiltered by any on-screen search. */
-export function exportHoldingsPdf(transactions: Transaction[], assetClass: AssetClass): void {
+export function exportHoldingsPdf(
+  transactions: Transaction[],
+  assetClass: AssetClass,
+  { currency, convertAmount }: ExportOptions,
+): void {
   const activeLots = transactions
     .filter((t) => t.action === "buy" && !t.locked && t.remainingShares > 0)
     .sort((a, b) => b.date.localeCompare(a.date));
@@ -31,13 +41,13 @@ export function exportHoldingsPdf(transactions: Transaction[], assetClass: Asset
   doc.text("Active", 14, 32);
   autoTable(doc, {
     startY: 36,
-    head: [["Symbol", "Name", "Type", unitLabel, "Buy price (PKR)", "Buy date"]],
+    head: [["Symbol", "Name", "Type", unitLabel, `Buy price (${currency})`, "Buy date"]],
     body: activeLots.map((lot) => [
       lot.symbol,
       lot.name,
       lot.category,
       String(lot.remainingShares),
-      lot.price.toFixed(2),
+      convertAmount(lot.price).toFixed(2),
       lot.date,
     ]),
   });
@@ -48,14 +58,16 @@ export function exportHoldingsPdf(transactions: Transaction[], assetClass: Asset
   doc.text("Sold", 14, afterActiveY + 10);
   autoTable(doc, {
     startY: afterActiveY + 14,
-    head: [["Symbol", "Name", `${unitLabel} sold`, "Sell price (PKR)", "Sell date", "Realized P/L (PKR)"]],
+    head: [
+      ["Symbol", "Name", `${unitLabel} sold`, `Sell price (${currency})`, "Sell date", `Realized P/L (${currency})`],
+    ],
     body: sells.map((sell) => [
       sell.symbol,
       sell.name,
       String(sell.shares),
-      sell.price.toFixed(2),
+      convertAmount(sell.price).toFixed(2),
       sell.date,
-      (sell.realizedPL ?? 0).toFixed(2),
+      convertAmount(sell.realizedPL ?? 0).toFixed(2),
     ]),
   });
 

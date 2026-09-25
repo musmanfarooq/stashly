@@ -12,6 +12,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { EmptyState } from "@/components/shared/empty-state";
+import { useDisplayCurrency } from "@/hooks/use-display-currency";
 import { useGetTransactionsQuery } from "@/store/api/transactionsApi";
 import type { AssetClass } from "@/types/transaction";
 import { assetUnitLabel } from "@/lib/asset-labels";
@@ -24,6 +25,7 @@ interface LotsTableProps {
 }
 
 export function LotsTable({ userId, assetClass, searchQuery = "" }: LotsTableProps) {
+  const { convertAmount, currency } = useDisplayCurrency(assetClass);
   const { data: transactions, isLoading, isError } = useGetTransactionsQuery({
     userId,
     assetClass,
@@ -83,7 +85,7 @@ export function LotsTable({ userId, assetClass, searchQuery = "" }: LotsTablePro
           <TableHead>Name</TableHead>
           <TableHead>Type</TableHead>
           <TableHead className="text-right">{unitLabel}</TableHead>
-          <TableHead className="text-right">Buy price (PKR)</TableHead>
+          <TableHead className="text-right">Buy price ({currency})</TableHead>
           <TableHead>Buy date</TableHead>
           <TableHead className="text-right">Edit</TableHead>
         </TableRow>
@@ -104,7 +106,7 @@ export function LotsTable({ userId, assetClass, searchQuery = "" }: LotsTablePro
                   <span className="text-muted-foreground"> / {lot.shares}</span>
                 )}
               </TableCell>
-              <TableCell className="text-right">{lot.price.toFixed(2)}</TableCell>
+              <TableCell className="text-right">{convertAmount(lot.price).toFixed(2)}</TableCell>
               <TableCell>{lot.date}</TableCell>
               <TableCell className="text-right">
                 {isEditable ? (

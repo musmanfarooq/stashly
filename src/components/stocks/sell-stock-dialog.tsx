@@ -15,9 +15,10 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useDisplayCurrency } from "@/hooks/use-display-currency";
 import { useSellSharesMutation } from "@/store/api/transactionsApi";
 import type { AssetClass } from "@/types/transaction";
-import { assetUnitLabel } from "@/lib/asset-labels";
+import { assetNativeCurrency, assetUnitLabel } from "@/lib/asset-labels";
 
 function today(): string {
   return new Date().toISOString().slice(0, 10);
@@ -43,6 +44,7 @@ export function SellStockDialog({
   const [price, setPrice] = useState("");
   const [date, setDate] = useState(today());
   const [sellShares, { isLoading }] = useSellSharesMutation();
+  const { formatAmount } = useDisplayCurrency(assetClass);
 
   const sharesValue = Number(shares);
   const priceValue = Number(price);
@@ -102,7 +104,7 @@ export function SellStockDialog({
             <DialogTitle>Sell {symbol}</DialogTitle>
             <DialogDescription>
               {availableShares} {assetUnitLabel(assetClass).toLowerCase()} held at an average cost
-              of PKR {avgCost.toFixed(2)}.
+              of {formatAmount(avgCost)}.
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
@@ -127,7 +129,9 @@ export function SellStockDialog({
                 )}
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="sell-price">Sell price per unit (PKR)</Label>
+                <Label htmlFor="sell-price">
+                  Sell price per unit ({assetNativeCurrency(assetClass)})
+                </Label>
                 <Input
                   id="sell-price"
                   type="number"
@@ -153,7 +157,7 @@ export function SellStockDialog({
               <p className="text-sm">
                 Estimated realized P/L:{" "}
                 <span className={estimatedPL >= 0 ? "text-profit" : "text-loss"}>
-                  PKR {estimatedPL.toFixed(2)}
+                  {formatAmount(estimatedPL)}
                 </span>
               </p>
             )}
