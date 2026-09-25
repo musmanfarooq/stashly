@@ -3,12 +3,14 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
+  Banknote,
   Bitcoin,
   History,
   LayoutDashboard,
   LineChart,
   Layers,
   LogOut,
+  Tag,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -17,18 +19,22 @@ import { Separator } from "@/components/ui/separator";
 import { signOutUser } from "@/services/firebase/auth";
 import { useAppSelector } from "@/store/hooks";
 
-const NAV_ITEMS = [
+const BASE_NAV_ITEMS = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
   { href: "/stocks", label: "Stocks", icon: LineChart },
   { href: "/crypto", label: "Crypto", icon: Bitcoin },
   { href: "/holdings", label: "Holdings", icon: Layers },
   { href: "/transactions", label: "Transactions", icon: History },
+  { href: "/dividends", label: "Dividends", icon: Banknote },
 ];
+
+const ADMIN_NAV_ITEM = { href: "/current-prices", label: "Current Prices", icon: Tag };
 
 export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
   const router = useRouter();
   const user = useAppSelector((state) => state.auth.user);
+  const navItems = user?.isAdmin ? [...BASE_NAV_ITEMS, ADMIN_NAV_ITEM] : BASE_NAV_ITEMS;
 
   async function handleLogout() {
     try {
@@ -49,7 +55,7 @@ export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
       </div>
       <Separator className="bg-sidebar-border" />
       <nav className="flex-1 space-y-1 p-3">
-        {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
+        {navItems.map(({ href, label, icon: Icon }) => {
           const isActive = pathname === href;
           return (
             <Link

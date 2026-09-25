@@ -1,36 +1,96 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Stashly
 
-## Getting Started
+A multi-tenant portfolio tracker for stocks and crypto (PKR only). Track buys and sells with weighted average cost, see realized and unrealized P/L, browse your holdings and transaction history, export PDFs, and log dividends — all behind Google Sign-In with strict per-user data isolation.
 
-First, run the development server:
+![Dashboard screenshot](docs/dashboard-screenshot.png)
+
+## Features
+
+- **Google Sign-In only**, with a 14-day session expiry and fully self-serve onboarding
+- **Stocks & Crypto**, each with add/edit/sell, weighted-average cost basis, and per-lot locking on sold shares
+- **Controlled category dropdown** for allocation reporting (users can add new categories, never free-type)
+- **Holdings View** — Active/Sold tabs, per-lot rows, search by symbol or name
+- **Transaction History** — a flat, sortable, date-filterable audit log
+- **PDF export** for both Transaction History (with an optional date cutoff) and Holdings
+- **Dashboard & graphs** — invested vs. realized/unrealized P/L, allocation by type (cost basis and current value), active-vs-sold counts, top movers, dividends by symbol
+- **Manual current market price** — an admin-only page for entering current prices (shared globally across all users) until an automated price feed exists
+- **Dividends** — logged per stock symbol, permanently locked once created
+- **Dark theme by default**, with profit/loss color semantics applied consistently everywhere
+
+See [appRequirment.md](appRequirment.md) for the full, detailed requirements this app was built against.
+
+## Tech stack
+
+- [Next.js](https://nextjs.org) (App Router) + TypeScript
+- [Firebase](https://firebase.google.com) — Auth (Google Sign-In) and Firestore
+- [Redux Toolkit](https://redux-toolkit.js.org) + RTK Query for state and data fetching
+- [shadcn/ui](https://ui.shadcn.com) + [Tailwind CSS v4](https://tailwindcss.com) + [lucide-react](https://lucide.dev)
+- [Recharts](https://recharts.org) for charts
+- [jsPDF](https://github.com/parallax/jsPDF) + [jspdf-autotable](https://github.com/simonbengtsson/jsPDF-AutoTable) for client-side PDF export
+
+## Getting started
+
+### 1. Clone and install
+
+```bash
+git clone <this-repo-url>
+cd stashly
+npm install
+```
+
+### 2. Set up Firebase
+
+1. Create a project at the [Firebase console](https://console.firebase.google.com).
+2. Enable **Authentication → Google** as a sign-in provider.
+3. Create a **Firestore** database.
+4. Deploy the security rules in [firestore.rules](firestore.rules) to your project (Firestore console → Rules, or via the Firebase CLI). These rules are the app's actual security boundary — see the comments in that file for what each one enforces.
+5. Copy [.env.example](.env.example) to `.env.local` and fill in your Firebase project's web app config:
+
+   ```bash
+   cp .env.example .env.local
+   ```
+
+### 3. Make yourself an admin (optional)
+
+The Manual Current Market Value page is gated behind an `isAdmin` flag on the `users/{uid}` document. This is never set through the app's UI — after signing in once, open the Firebase console and manually set `isAdmin: true` on your user document.
+
+### 4. Run the dev server
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) and sign in with any Google account.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Available scripts
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Script          | Description                          |
+| --------------- | ------------------------------------ |
+| `npm run dev`   | Start the Next.js dev server         |
+| `npm run build` | Production build                     |
+| `npm run start` | Serve the production build           |
+| `npm run lint`  | Run ESLint                           |
 
-## Learn More
+## Project structure
 
-To learn more about Next.js, take a look at the following resources:
+```
+src/
+  app/              Next.js routes (App Router)
+  components/       UI components, grouped by feature
+  services/firebase/ All Firebase/Firestore calls — the only layer that talks to Firebase directly
+  store/            Redux store, RTK Query API slices
+  lib/              Pure helper functions (portfolio math, formatting, PDF export)
+  types/            Shared TypeScript types
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Out of scope (by design)
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- Automated live/current price feed (the manual current-price page is an explicit interim stopgap)
+- Brokerage/transaction fee tracking
+- Multi-currency support (PKR only)
+- CSV import/export
+- Historical portfolio value timeline
 
-## Deploy on Vercel
+## License
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+MIT
