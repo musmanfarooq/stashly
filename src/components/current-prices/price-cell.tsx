@@ -46,6 +46,7 @@ export function PriceCell({ symbol, assetClass, currentPrice, updatedBy }: Price
       />
       <Button
         type="button"
+        className="hover:cursor-pointer"
         size="icon-sm"
         variant="outline"
         disabled={!isValid || isUnchanged || isLoading}

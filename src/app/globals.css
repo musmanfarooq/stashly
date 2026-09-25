@@ -196,5 +196,16 @@
   }
   html {
     @apply font-sans;
+    /* App is dark-only — tells the browser to render native form controls
+       (date pickers, scrollbars) in dark mode instead of light-on-dark. */
+    color-scheme: dark;
+  }
+
+  /* Belt-and-suspenders for the calendar icon on <input type="date"> in
+     Chromium/WebKit: color-scheme should already lighten it, but invert as a
+     fallback so it never renders invisible-black-on-dark again. */
+  input[type="date"]::-webkit-calendar-picker-indicator {
+    cursor: pointer;
+    filter: invert(1);
   }
 }
