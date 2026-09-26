@@ -1,6 +1,5 @@
 import { computeAverageCost } from "@/services/firebase/transactions";
-import type { CurrentPrice } from "@/types/current-price";
-import type { AssetClass, Transaction } from "@/types/transaction";
+import type { Transaction } from "@/types/transaction";
 
 function activeBuyLots(transactions: Transaction[]): Transaction[] {
   return transactions.filter((t) => t.action === "buy" && t.remainingShares > 0);
@@ -108,35 +107,6 @@ export function computeAllocationByCategory(transactions: Transaction[]): Catego
     .sort((a, b) => b.value - a.value);
 }
 
-/**
- * Live-fetched prices (crypto via CoinGecko, PSX stocks via the sarmaaya
- * feed) take priority over the admin-set manual price for the same symbol;
- * the manual price still serves as the fallback when the live feed has
- * nothing for that symbol (API down, symbol not found) — nothing regresses
- * to blank.
- */
-export function mergeLivePrices(
-  adminPrices: CurrentPrice[],
-  livePricesBySymbol: Record<string, number>,
-  assetClass: AssetClass,
-): CurrentPrice[] {
-  const merged = new Map(adminPrices.map((price) => [price.symbol, price]));
-
-  for (const [symbol, price] of Object.entries(livePricesBySymbol)) {
-    const existing = merged.get(symbol);
-    merged.set(symbol, {
-      id: existing?.id ?? symbol,
-      symbol,
-      assetClass,
-      price,
-      updatedAt: Date.now(),
-      updatedBy: "live-feed",
-    });
-  }
-
-  return Array.from(merged.values());
-}
-
 export interface PricedPosition extends Position {
   currentPrice: number;
   costBasis: number;
@@ -145,18 +115,17 @@ export interface PricedPosition extends Position {
 }
 
 /**
- * Active positions that have a manually entered current price (2.10) —
- * symbols without one are excluded entirely, never treated as zero (2.4).
+ * Active positions that have a live-fetched current price — symbols the
+ * live feed has nothing for are excluded entirely, never treated as zero.
  */
 export function computePricedPositions(
   transactions: Transaction[],
-  currentPrices: CurrentPrice[],
+  livePrices: Record<string, number>,
 ): PricedPosition[] {
-  const priceBySymbol = new Map(currentPrices.map((p) => [p.symbol, p.price]));
   const priced: PricedPosition[] = [];
 
   for (const position of computeActivePositions(transactions)) {
-    const currentPrice = priceBySymbol.get(position.symbol);
+    const currentPrice = livePrices[position.symbol];
     if (currentPrice === undefined) continue;
 
     const costBasis = position.totalShares * position.avgCost;

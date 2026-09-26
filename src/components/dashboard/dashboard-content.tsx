@@ -5,7 +5,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DividendsBySymbolChart } from "@/components/dividends/dividends-by-symbol-chart";
-import { useGetCurrentPricesQuery } from "@/store/api/currentPricesApi";
 import { useGetDividendsQuery } from "@/store/api/dividendsApi";
 import { useGetTransactionsQuery } from "@/store/api/transactionsApi";
 import {
@@ -29,29 +28,18 @@ export function DashboardContent({ userId }: DashboardContentProps) {
   const { formatAmount: formatCryptoAmount } = useDisplayCurrency("crypto");
   const stockQuery = useGetTransactionsQuery({ userId, assetClass: "stock" });
   const cryptoQuery = useGetTransactionsQuery({ userId, assetClass: "crypto" });
-  const pricesQuery = useGetCurrentPricesQuery();
   const dividendsQuery = useGetDividendsQuery(userId);
 
   const stockTx = stockQuery.data ?? [];
   const cryptoTx = cryptoQuery.data ?? [];
-  const prices = pricesQuery.data ?? [];
   const dividends = dividendsQuery.data ?? [];
 
   // Called unconditionally (Rules of Hooks) — the crypto call also polls the
   // live feed every 60s, since the Dashboard is one of the two pages that should.
-  const stockPriced = usePricedPositions(
-    stockTx,
-    "stock",
-    prices.filter((p) => p.assetClass === "stock"),
-  );
-  const cryptoPriced = usePricedPositions(
-    cryptoTx,
-    "crypto",
-    prices.filter((p) => p.assetClass === "crypto"),
-  );
+  const stockPriced = usePricedPositions(stockTx, "stock");
+  const cryptoPriced = usePricedPositions(cryptoTx, "crypto");
 
-  const isLoading =
-    stockQuery.isLoading || cryptoQuery.isLoading || pricesQuery.isLoading || dividendsQuery.isLoading;
+  const isLoading = stockQuery.isLoading || cryptoQuery.isLoading || dividendsQuery.isLoading;
 
   if (isLoading) {
     return (

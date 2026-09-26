@@ -16,7 +16,6 @@ import { useDisplayCurrency } from "@/hooks/use-display-currency";
 import { useLiveCryptoPrices } from "@/hooks/use-live-crypto-prices";
 import { useLivePsxPrices } from "@/hooks/use-live-psx-prices";
 import { computeActivePositions } from "@/lib/portfolio-stats";
-import { useGetCurrentPricesQuery } from "@/store/api/currentPricesApi";
 import { useGetTransactionsQuery } from "@/store/api/transactionsApi";
 import type { AssetClass } from "@/types/transaction";
 import { assetUnitLabel } from "@/lib/asset-labels";
@@ -34,7 +33,6 @@ export function PositionsTable({ userId, assetClass, searchQuery = "" }: Positio
     userId,
     assetClass,
   });
-  const { data: currentPrices, isLoading: pricesLoading } = useGetCurrentPricesQuery();
 
   const allPositions = computeActivePositions(transactions ?? []);
   const symbols = allPositions.map((p) => p.symbol);
@@ -45,7 +43,7 @@ export function PositionsTable({ userId, assetClass, searchQuery = "" }: Positio
   const { livePrices: liveCryptoPrices } = useLiveCryptoPrices(assetClass === "crypto" ? symbols : []);
   const livePrices = assetClass === "stock" ? liveStockPrices : liveCryptoPrices;
 
-  if (isLoading || pricesLoading) {
+  if (isLoading) {
     return (
       <div className="space-y-2">
         <Skeleton className="h-10 w-full" />
@@ -87,17 +85,7 @@ export function PositionsTable({ userId, assetClass, searchQuery = "" }: Positio
     );
   }
 
-  // Live feed (PSX or crypto) takes priority; admin-set price is the
-  // fallback when the live feed has nothing for that symbol (API down,
-  // symbol not found).
-  const priceBySymbol = new Map(
-    (currentPrices ?? [])
-      .filter((price) => price.assetClass === assetClass)
-      .map((price) => [price.symbol, price.price]),
-  );
-  for (const [symbol, price] of Object.entries(livePrices)) {
-    priceBySymbol.set(symbol, price);
-  }
+  const priceBySymbol = new Map(Object.entries(livePrices));
 
   return (
     <Table>
