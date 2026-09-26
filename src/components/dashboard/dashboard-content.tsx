@@ -10,13 +10,13 @@ import { useGetDividendsQuery } from "@/store/api/dividendsApi";
 import { useGetTransactionsQuery } from "@/store/api/transactionsApi";
 import {
   computeActiveSymbolCount,
-  computePricedPositions,
   computeSoldSymbolCount,
   computeTotalInvested,
   computeTotalRealizedPL,
   computeTotalUnrealizedPL,
 } from "@/lib/portfolio-stats";
 import { useDisplayCurrency } from "@/hooks/use-display-currency";
+import { usePricedPositions } from "@/hooks/use-priced-positions";
 import { SummaryCard } from "./summary-card";
 import { AssetGraphsPanel } from "./asset-graphs-panel";
 
@@ -32,6 +32,24 @@ export function DashboardContent({ userId }: DashboardContentProps) {
   const pricesQuery = useGetCurrentPricesQuery();
   const dividendsQuery = useGetDividendsQuery(userId);
 
+  const stockTx = stockQuery.data ?? [];
+  const cryptoTx = cryptoQuery.data ?? [];
+  const prices = pricesQuery.data ?? [];
+  const dividends = dividendsQuery.data ?? [];
+
+  // Called unconditionally (Rules of Hooks) — the crypto call also polls the
+  // live feed every 60s, since the Dashboard is one of the two pages that should.
+  const stockPriced = usePricedPositions(
+    stockTx,
+    "stock",
+    prices.filter((p) => p.assetClass === "stock"),
+  );
+  const cryptoPriced = usePricedPositions(
+    cryptoTx,
+    "crypto",
+    prices.filter((p) => p.assetClass === "crypto"),
+  );
+
   const isLoading =
     stockQuery.isLoading || cryptoQuery.isLoading || pricesQuery.isLoading || dividendsQuery.isLoading;
 
@@ -45,11 +63,6 @@ export function DashboardContent({ userId }: DashboardContentProps) {
     );
   }
 
-  const stockTx = stockQuery.data ?? [];
-  const cryptoTx = cryptoQuery.data ?? [];
-  const prices = pricesQuery.data ?? [];
-  const dividends = dividendsQuery.data ?? [];
-
   const stockInvested = computeTotalInvested(stockTx);
   const cryptoInvested = computeTotalInvested(cryptoTx);
   const stockRealized = computeTotalRealizedPL(stockTx);
@@ -59,8 +72,6 @@ export function DashboardContent({ userId }: DashboardContentProps) {
   const cryptoActive = computeActiveSymbolCount(cryptoTx);
   const cryptoSold = computeSoldSymbolCount(cryptoTx);
 
-  const stockPriced = computePricedPositions(stockTx, prices.filter((p) => p.assetClass === "stock"));
-  const cryptoPriced = computePricedPositions(cryptoTx, prices.filter((p) => p.assetClass === "crypto"));
   const stockUnrealized = computeTotalUnrealizedPL(stockPriced);
   const cryptoUnrealized = computeTotalUnrealizedPL(cryptoPriced);
 

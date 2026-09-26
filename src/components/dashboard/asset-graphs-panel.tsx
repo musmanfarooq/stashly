@@ -4,6 +4,7 @@ import { LineChart } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/shared/empty-state";
+import { usePricedPositions } from "@/hooks/use-priced-positions";
 import { useGetCurrentPricesQuery } from "@/store/api/currentPricesApi";
 import { useGetTransactionsQuery } from "@/store/api/transactionsApi";
 import type { AssetClass } from "@/types/transaction";
@@ -11,7 +12,6 @@ import {
   computeActiveSymbolCount,
   computeAllocationByCategory,
   computeAllocationByCurrentValue,
-  computePricedPositions,
   computeSoldSymbolCount,
   computeTotalInvested,
   computeTotalRealizedPL,
@@ -35,6 +35,12 @@ export function AssetGraphsPanel({ userId, assetClass }: AssetGraphsPanelProps) 
   });
   const { data: currentPrices, isLoading: pricesLoading } = useGetCurrentPricesQuery();
 
+  const list = transactions ?? [];
+  const pricedForClass = (currentPrices ?? []).filter((price) => price.assetClass === assetClass);
+  // Called unconditionally (Rules of Hooks) — for crypto this also polls the
+  // live feed every 60s, since this panel only ever renders on the Dashboard.
+  const pricedPositions = usePricedPositions(list, assetClass, pricedForClass);
+
   if (isLoading || pricesLoading) {
     return (
       <div className="grid gap-4 md:grid-cols-3">
@@ -55,15 +61,12 @@ export function AssetGraphsPanel({ userId, assetClass }: AssetGraphsPanelProps) 
     );
   }
 
-  const list = transactions ?? [];
   const allocation = computeAllocationByCategory(list);
   const invested = computeTotalInvested(list);
   const realizedPL = computeTotalRealizedPL(list);
   const activeCount = computeActiveSymbolCount(list);
   const soldCount = computeSoldSymbolCount(list);
 
-  const pricedForClass = (currentPrices ?? []).filter((price) => price.assetClass === assetClass);
-  const pricedPositions = computePricedPositions(list, pricedForClass);
   const totalCurrentValue = pricedPositions.reduce((sum, p) => sum + p.currentValue, 0);
   const totalUnrealizedPL = computeTotalUnrealizedPL(pricedPositions);
   const allocationByCurrentValue = computeAllocationByCurrentValue(pricedPositions);

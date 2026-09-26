@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/table";
 import { EmptyState } from "@/components/shared/empty-state";
 import { useDisplayCurrency } from "@/hooks/use-display-currency";
+import { useLiveCryptoPrices } from "@/hooks/use-live-crypto-prices";
 import { computeActivePositions } from "@/lib/portfolio-stats";
 import { useGetCurrentPricesQuery } from "@/store/api/currentPricesApi";
 import { useGetTransactionsQuery } from "@/store/api/transactionsApi";
@@ -33,6 +34,12 @@ export function PositionsTable({ userId, assetClass, searchQuery = "" }: Positio
     assetClass,
   });
   const { data: currentPrices, isLoading: pricesLoading } = useGetCurrentPricesQuery();
+
+  const allPositions = computeActivePositions(transactions ?? []);
+  // Called unconditionally (Rules of Hooks) — polls the live feed every 60s
+  // for crypto, since this table is what the dedicated Crypto page renders.
+  const cryptoSymbols = assetClass === "crypto" ? allPositions.map((p) => p.symbol) : [];
+  const { livePrices } = useLiveCryptoPrices(cryptoSymbols);
 
   if (isLoading || pricesLoading) {
     return (
@@ -55,7 +62,7 @@ export function PositionsTable({ userId, assetClass, searchQuery = "" }: Positio
   }
 
   const query = searchQuery.trim().toLowerCase();
-  const positions = computeActivePositions(transactions ?? []).filter(
+  const positions = allPositions.filter(
     (position) =>
       query.length === 0 ||
       position.symbol.toLowerCase().includes(query) ||
@@ -76,11 +83,18 @@ export function PositionsTable({ userId, assetClass, searchQuery = "" }: Positio
     );
   }
 
+  // Live crypto feed takes priority; admin-set price is the fallback when
+  // the live feed has nothing for that symbol (API down, symbol not found).
   const priceBySymbol = new Map(
     (currentPrices ?? [])
       .filter((price) => price.assetClass === assetClass)
       .map((price) => [price.symbol, price.price]),
   );
+  if (assetClass === "crypto") {
+    for (const [symbol, price] of Object.entries(livePrices)) {
+      priceBySymbol.set(symbol, price);
+    }
+  }
 
   return (
     <Table>

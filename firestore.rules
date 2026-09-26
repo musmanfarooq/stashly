@@ -74,5 +74,16 @@ service cloud.firestore {
       allow update: if false;
       allow delete: if false;
     }
+
+    // CRYPTO SYMBOL MAP — cached ticker -> CoinGecko coin-id lookups, global
+    // and shared. Not sensitive/editable data — it's a deterministic mapping
+    // derived from a public API, cached so it's resolved once per symbol
+    // rather than once per user per session. Any signed-in user can write,
+    // since a client can only ever write the same correct mapping a search
+    // against the public API would return anyway.
+    match /cryptoSymbolMap/{symbol} {
+      allow read:  if isSignedIn();
+      allow write: if isSignedIn();
+    }
   }
 }

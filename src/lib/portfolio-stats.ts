@@ -108,6 +108,33 @@ export function computeAllocationByCategory(transactions: Transaction[]): Catego
     .sort((a, b) => b.value - a.value);
 }
 
+/**
+ * Live-fetched crypto prices (2026 automated feed) take priority over the
+ * admin-set manual price for the same symbol; the manual price still serves
+ * as the fallback when the live feed has nothing for that symbol (API down,
+ * symbol not found on CoinGecko, etc.) — nothing regresses to blank.
+ */
+export function mergeLiveCryptoPrices(
+  adminPrices: CurrentPrice[],
+  livePricesBySymbol: Record<string, number>,
+): CurrentPrice[] {
+  const merged = new Map(adminPrices.map((price) => [price.symbol, price]));
+
+  for (const [symbol, price] of Object.entries(livePricesBySymbol)) {
+    const existing = merged.get(symbol);
+    merged.set(symbol, {
+      id: existing?.id ?? symbol,
+      symbol,
+      assetClass: "crypto",
+      price,
+      updatedAt: Date.now(),
+      updatedBy: "live-feed",
+    });
+  }
+
+  return Array.from(merged.values());
+}
+
 export interface PricedPosition extends Position {
   currentPrice: number;
   costBasis: number;
