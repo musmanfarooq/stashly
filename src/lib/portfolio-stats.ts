@@ -1,6 +1,6 @@
 import { computeAverageCost } from "@/services/firebase/transactions";
 import type { CurrentPrice } from "@/types/current-price";
-import type { Transaction } from "@/types/transaction";
+import type { AssetClass, Transaction } from "@/types/transaction";
 
 function activeBuyLots(transactions: Transaction[]): Transaction[] {
   return transactions.filter((t) => t.action === "buy" && t.remainingShares > 0);
@@ -109,14 +109,16 @@ export function computeAllocationByCategory(transactions: Transaction[]): Catego
 }
 
 /**
- * Live-fetched crypto prices (2026 automated feed) take priority over the
- * admin-set manual price for the same symbol; the manual price still serves
- * as the fallback when the live feed has nothing for that symbol (API down,
- * symbol not found on CoinGecko, etc.) — nothing regresses to blank.
+ * Live-fetched prices (crypto via CoinGecko, PSX stocks via the sarmaaya
+ * feed) take priority over the admin-set manual price for the same symbol;
+ * the manual price still serves as the fallback when the live feed has
+ * nothing for that symbol (API down, symbol not found) — nothing regresses
+ * to blank.
  */
-export function mergeLiveCryptoPrices(
+export function mergeLivePrices(
   adminPrices: CurrentPrice[],
   livePricesBySymbol: Record<string, number>,
+  assetClass: AssetClass,
 ): CurrentPrice[] {
   const merged = new Map(adminPrices.map((price) => [price.symbol, price]));
 
@@ -125,7 +127,7 @@ export function mergeLiveCryptoPrices(
     merged.set(symbol, {
       id: existing?.id ?? symbol,
       symbol,
-      assetClass: "crypto",
+      assetClass,
       price,
       updatedAt: Date.now(),
       updatedBy: "live-feed",
