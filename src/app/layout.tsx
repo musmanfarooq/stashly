@@ -32,7 +32,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           <AuthProvider>
             <TooltipProvider>
               {children}
-              <Toaster theme="dark" richColors position="top-right" />
+              <Toaster theme="dark" richColors position="top-right" closeButton />
             </TooltipProvider>
           </AuthProvider>
         </ReduxProvider>
