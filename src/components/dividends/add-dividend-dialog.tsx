@@ -120,6 +120,7 @@ export function AddDividendDialog({ userId }: AddDividendDialogProps) {
               <Label htmlFor="dividend-date">Date received</Label>
               <Input
                 id="dividend-date"
+                className="hover:cursor-pointer"
                 type="date"
                 value={date}
                 onChange={(event) => setDate(event.target.value)}

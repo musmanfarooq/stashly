@@ -1,9 +1,11 @@
 import {
   addBuyTransaction,
+  deleteBuyTransaction,
   editBuyTransaction,
   fetchTransactions,
   sellShares,
   type AddBuyInput,
+  type DeleteBuyInput,
   type EditBuyInput,
   type SellSharesInput,
 } from "@/services/firebase/transactions";
@@ -47,6 +49,17 @@ export const transactionsApi = baseApi.injectEndpoints({
       },
       invalidatesTags: ["Transactions", "Holdings"],
     }),
+    deleteBuy: builder.mutation<null, DeleteBuyInput>({
+      queryFn: async (input) => {
+        try {
+          await deleteBuyTransaction(input);
+          return { data: null };
+        } catch (error) {
+          return toQueryError(error);
+        }
+      },
+      invalidatesTags: ["Transactions", "Holdings"],
+    }),
     sellShares: builder.mutation<Transaction, SellSharesInput>({
       queryFn: async (input) => {
         try {
@@ -64,5 +77,6 @@ export const {
   useGetTransactionsQuery,
   useAddBuyMutation,
   useEditBuyMutation,
+  useDeleteBuyMutation,
   useSellSharesMutation,
 } = transactionsApi;

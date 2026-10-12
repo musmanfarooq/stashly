@@ -15,7 +15,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { CategorySelect } from "./category-select";
-import { useAddBuyMutation } from "@/store/api/transactionsApi";
+import { computeEverBoughtSymbols } from "@/lib/portfolio-stats";
+import { useAddBuyMutation, useGetTransactionsQuery } from "@/store/api/transactionsApi";
 import type { AssetClass } from "@/types/transaction";
 import {
   assetNamePlaceholder,
@@ -45,6 +46,28 @@ export function AddStockDialog({ userId, assetClass }: AddStockDialogProps) {
   const [date, setDate] = useState(today());
   const [category, setCategory] = useState("");
   const [addBuy, { isLoading }] = useAddBuyMutation();
+  const { data: transactions } = useGetTransactionsQuery({ userId, assetClass });
+
+  // Previously-entered symbols for this asset class, so the user can pick one
+  // they've already bought instead of retyping it — typing a brand new
+  // symbol/name still works exactly as before.
+  const previousEntries = computeEverBoughtSymbols(transactions ?? []);
+  const symbolToName = new Map(previousEntries.map((entry) => [entry.symbol, entry.name]));
+  const nameToSymbol = new Map(previousEntries.map((entry) => [entry.name, entry.symbol]));
+  const symbolListId = `add-${assetClass}-symbol-options`;
+  const nameListId = `add-${assetClass}-name-options`;
+
+  function handleSymbolChange(value: string) {
+    setSymbol(value);
+    const knownName = symbolToName.get(value.trim().toUpperCase());
+    if (knownName) setName(knownName);
+  }
+
+  function handleNameChange(value: string) {
+    setName(value);
+    const knownSymbol = nameToSymbol.get(value);
+    if (knownSymbol) setSymbol(knownSymbol);
+  }
 
   const sharesValue = Number(shares);
   const priceValue = Number(price);
@@ -112,21 +135,35 @@ export function AddStockDialog({ userId, assetClass }: AddStockDialogProps) {
               <Label htmlFor="add-symbol">Symbol</Label>
               <Input
                 id="add-symbol"
+                list={symbolListId}
                 value={symbol}
-                onChange={(event) => setSymbol(event.target.value)}
+                onChange={(event) => handleSymbolChange(event.target.value)}
                 placeholder={assetSymbolPlaceholder(assetClass)}
                 required
               />
+              <datalist id={symbolListId}>
+                {previousEntries.map((entry) => (
+                  <option key={entry.symbol} value={entry.symbol}>
+                    {entry.name}
+                  </option>
+                ))}
+              </datalist>
             </div>
             <div className="grid gap-2">
               <Label htmlFor="add-name">Name</Label>
               <Input
                 id="add-name"
+                list={nameListId}
                 value={name}
-                onChange={(event) => setName(event.target.value)}
+                onChange={(event) => handleNameChange(event.target.value)}
                 placeholder={assetNamePlaceholder(assetClass)}
                 required
               />
+              <datalist id={nameListId}>
+                {previousEntries.map((entry) => (
+                  <option key={entry.symbol} value={entry.name} />
+                ))}
+              </datalist>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-2">

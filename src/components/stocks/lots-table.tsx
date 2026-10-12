@@ -16,6 +16,7 @@ import { useDisplayCurrency } from "@/hooks/use-display-currency";
 import { useGetTransactionsQuery } from "@/store/api/transactionsApi";
 import type { AssetClass } from "@/types/transaction";
 import { assetUnitLabel } from "@/lib/asset-labels";
+import { DeleteStockDialog } from "./delete-stock-dialog";
 import { EditStockDialog } from "./edit-stock-dialog";
 
 interface LotsTableProps {
@@ -87,7 +88,7 @@ export function LotsTable({ userId, assetClass, searchQuery = "" }: LotsTablePro
           <TableHead className="text-right">{unitLabel}</TableHead>
           <TableHead className="text-right">Buy price ({currency})</TableHead>
           <TableHead>Buy date</TableHead>
-          <TableHead className="text-right">Edit</TableHead>
+          <TableHead className="text-right">Actions</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -110,7 +111,10 @@ export function LotsTable({ userId, assetClass, searchQuery = "" }: LotsTablePro
               <TableCell>{lot.date}</TableCell>
               <TableCell className="text-right">
                 {isEditable ? (
-                  <EditStockDialog userId={userId} transaction={lot} />
+                  <div className="flex justify-end gap-2">
+                    <EditStockDialog userId={userId} transaction={lot} />
+                    <DeleteStockDialog userId={userId} transaction={lot} />
+                  </div>
                 ) : (
                   <span className="text-xs text-muted-foreground">Partially sold</span>
                 )}

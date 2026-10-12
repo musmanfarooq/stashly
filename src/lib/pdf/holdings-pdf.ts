@@ -11,13 +11,15 @@ interface JsPdfWithAutoTable extends jsPDF {
 interface ExportOptions {
   currency: CurrencyCode;
   convertAmount: (pkrAmount: number) => number;
+  /** Live current price per symbol, native currency (PKR for stock, USD for crypto). Symbols with no live price are shown as "—". */
+  currentPrices: Record<string, number>;
 }
 
 /** Exports the full current Holdings View (Active + Sold, per 2.7) — no date filter, always unfiltered by any on-screen search. */
 export function exportHoldingsPdf(
   transactions: Transaction[],
   assetClass: AssetClass,
-  { currency, convertAmount }: ExportOptions,
+  { currency, convertAmount, currentPrices }: ExportOptions,
 ): void {
   const activeLots = transactions
     .filter((t) => t.action === "buy" && !t.locked && t.remainingShares > 0)
@@ -41,18 +43,44 @@ export function exportHoldingsPdf(
   doc.text("Active", 14, 32);
   autoTable(doc, {
     startY: 36,
-    head: [["Symbol", "Name", "Type", unitLabel, `Buy price (${currency})`, "Buy date"]],
-    body: activeLots.map((lot) => [
-      lot.symbol,
-      lot.name,
-      lot.category,
-      String(lot.remainingShares),
-      convertAmount(lot.price).toFixed(2),
-      lot.date,
-    ]),
+    head: [
+      [
+        "Symbol",
+        "Name",
+        "Type",
+        unitLabel,
+        `Buy price (${currency})`,
+        "Buy date",
+        `Current price (${currency})`,
+        `Current value (${currency})`,
+      ],
+    ],
+    body: activeLots.map((lot) => {
+      const currentPrice = currentPrices[lot.symbol];
+      const currentValue = currentPrice !== undefined ? currentPrice * lot.remainingShares : undefined;
+      return [
+        lot.symbol,
+        lot.name,
+        lot.category,
+        String(lot.remainingShares),
+        convertAmount(lot.price).toFixed(2),
+        lot.date,
+        currentPrice !== undefined ? convertAmount(currentPrice).toFixed(2) : "—",
+        currentValue !== undefined ? convertAmount(currentValue).toFixed(2) : "—",
+      ];
+    }),
   });
 
-  const afterActiveY = doc.lastAutoTable?.finalY ?? 36;
+  const totalCurrentValue = activeLots.reduce((sum, lot) => {
+    const currentPrice = currentPrices[lot.symbol];
+    return currentPrice !== undefined ? sum + currentPrice * lot.remainingShares : sum;
+  }, 0);
+
+  let afterActiveY = doc.lastAutoTable?.finalY ?? 36;
+  doc.setFontSize(10);
+  doc.setTextColor(0);
+  doc.text(`Total current value: ${convertAmount(totalCurrentValue).toFixed(2)} ${currency}`, 14, afterActiveY + 7);
+  afterActiveY += 7;
 
   doc.setFontSize(12);
   doc.text("Sold", 14, afterActiveY + 10);

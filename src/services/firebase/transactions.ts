@@ -2,6 +2,7 @@ import {
   Timestamp,
   addDoc,
   collection,
+  deleteDoc,
   doc,
   getDoc,
   getDocs,
@@ -227,6 +228,29 @@ export async function editBuyTransaction(input: EditBuyInput): Promise<void> {
   if (symbol !== existing.symbol) {
     await rebuildHolding(input.userId, input.assetClass, symbol);
   }
+}
+
+export interface DeleteBuyInput {
+  id: string;
+  userId: string;
+  assetClass: AssetClass;
+}
+
+/** Only a lot with zero shares sold against it (remainingShares === shares) may be deleted. */
+export async function deleteBuyTransaction(input: DeleteBuyInput): Promise<void> {
+  const ref = doc(db, "transactions", input.id);
+  const snapshot = await getDoc(ref);
+  if (!snapshot.exists()) {
+    throw new Error("Transaction not found.");
+  }
+
+  const existing = snapshot.data() as TransactionDoc;
+  if (existing.locked || existing.remainingShares !== existing.shares) {
+    throw new Error("Only a lot with no shares sold against it can be deleted.");
+  }
+
+  await deleteDoc(ref);
+  await rebuildHolding(input.userId, input.assetClass, existing.symbol);
 }
 
 export interface SellSharesInput {

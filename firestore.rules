@@ -19,6 +19,11 @@ service cloud.firestore {
       return request.resource.data.userId == resource.data.userId;
     }
 
+    function canDeleteHoldings() {
+      return isSignedIn() &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.canDeleteHoldings == true;
+    }
+
     // USERS — each user reads/writes only their own doc.
     // isAdmin can never be set or changed by the client; only via the
     // Firebase console (2.1), which uses the Admin SDK and bypasses these rules.
@@ -33,14 +38,20 @@ service cloud.firestore {
 
     // TRANSACTIONS — source of truth for buys/sells (2.2).
     // A locked (sold) record can never be updated again, by anyone, for any reason.
-    // No document in this collection is ever deleted.
+    // Deletion is opt-in per user (canDeleteHoldings) and only ever allowed for
+    // a buy lot that's never had any shares sold against it — a sell record, a
+    // locked lot, or a partially-sold lot can never be deleted, by anyone.
     match /transactions/{transactionId} {
       allow read:   if isOwner(resource.data.userId);
       allow create: if isOwner(request.resource.data.userId);
       allow update: if isOwner(resource.data.userId)
                     && resource.data.locked != true
                     && ownerUnchanged();
-      allow delete: if false;
+      allow delete: if isOwner(resource.data.userId)
+                    && canDeleteHoldings()
+                    && resource.data.action == "buy"
+                    && resource.data.locked != true
+                    && resource.data.remainingShares == resource.data.shares;
     }
 
     // HOLDINGS — denormalized per-symbol summary, fully owned by the user (3.2).
@@ -51,13 +62,14 @@ service cloud.firestore {
       allow delete: if isOwner(resource.data.userId);
     }
 
-    // TYPES — category dropdown values (2.5). Assumed per-user; change the
-    // read rule to isSignedIn() if these should be global/shared instead.
+    // TYPES — category dropdown values. Global and shared across every user;
+    // only an admin can add, edit, or remove one. Migrated from the old
+    // per-user model where each user had their own private copy.
     match /types/{typeId} {
-      allow read:   if isOwner(resource.data.userId);
-      allow create: if isOwner(request.resource.data.userId);
-      allow update: if isOwner(resource.data.userId) && ownerUnchanged();
-      allow delete: if isOwner(resource.data.userId);
+      allow read:   if isSignedIn();
+      allow create: if isAdmin();
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
     }
 
     // DIVIDENDS — permanently immutable once created (2.11).

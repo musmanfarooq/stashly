@@ -26,23 +26,14 @@ interface EditStockDialogProps {
 
 export function EditStockDialog({ userId, transaction }: EditStockDialogProps) {
   const [open, setOpen] = useState(false);
-  const [symbol, setSymbol] = useState(transaction.symbol);
   const [name, setName] = useState(transaction.name);
-  const [shares, setShares] = useState(String(transaction.shares));
   const [price, setPrice] = useState(String(transaction.price));
   const [date, setDate] = useState(transaction.date);
   const [category, setCategory] = useState(transaction.category);
   const [editBuy, { isLoading }] = useEditBuyMutation();
 
-  const sharesValue = Number(shares);
   const priceValue = Number(price);
-  const isValid =
-    symbol.trim().length > 0 &&
-    name.trim().length > 0 &&
-    category.length > 0 &&
-    sharesValue > 0 &&
-    priceValue > 0 &&
-    date.length > 0;
+  const isValid = name.trim().length > 0 && category.length > 0 && priceValue > 0 && date.length > 0;
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
@@ -53,10 +44,10 @@ export function EditStockDialog({ userId, transaction }: EditStockDialogProps) {
         id: transaction.id,
         userId,
         assetClass: transaction.assetClass,
-        symbol,
+        symbol: transaction.symbol,
         name,
         category,
-        shares: sharesValue,
+        shares: transaction.shares,
         price: priceValue,
         date,
       }).unwrap();
@@ -82,12 +73,7 @@ export function EditStockDialog({ userId, transaction }: EditStockDialogProps) {
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
               <Label htmlFor="edit-symbol">Symbol</Label>
-              <Input
-                id="edit-symbol"
-                value={symbol}
-                onChange={(event) => setSymbol(event.target.value)}
-                required
-              />
+              <Input id="edit-symbol" value={transaction.symbol} disabled />
             </div>
             <div className="grid gap-2">
               <Label htmlFor="edit-name">Name</Label>
@@ -101,15 +87,7 @@ export function EditStockDialog({ userId, transaction }: EditStockDialogProps) {
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-2">
                 <Label htmlFor="edit-shares">{assetUnitLabel(transaction.assetClass)}</Label>
-                <Input
-                  id="edit-shares"
-                  type="number"
-                  min="0"
-                  step="any"
-                  value={shares}
-                  onChange={(event) => setShares(event.target.value)}
-                  required
-                />
+                <Input id="edit-shares" type="number" value={transaction.shares} disabled />
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="edit-price">

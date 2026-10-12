@@ -7,6 +7,7 @@ export interface AppUser {
   photoURL: string | null;
   isAdmin: boolean;
   currency: CurrencyCode;
+  canDeleteHoldings: boolean;
   lastLoginAt: number;
   createdAt: number;
 }

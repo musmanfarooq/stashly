@@ -9,7 +9,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LotsTable } from "@/components/stocks/lots-table";
 import { SoldTable } from "@/components/stocks/sold-table";
 import { useDisplayCurrency } from "@/hooks/use-display-currency";
+import { useLiveCryptoPrices } from "@/hooks/use-live-crypto-prices";
+import { useLivePsxPrices } from "@/hooks/use-live-psx-prices";
 import { exportHoldingsPdf } from "@/lib/pdf/holdings-pdf";
+import { computeActivePositions } from "@/lib/portfolio-stats";
 import { useGetTransactionsQuery } from "@/store/api/transactionsApi";
 import type { AssetClass } from "@/types/transaction";
 
@@ -24,12 +27,19 @@ export function HoldingsBrowser({ userId, assetClass }: HoldingsBrowserProps) {
   const { currency, convertAmount } = useDisplayCurrency(assetClass);
   const { data: transactions, isFetching } = useGetTransactionsQuery({ userId, assetClass });
 
+  const symbols = computeActivePositions(transactions ?? []).map((p) => p.symbol);
+  // Both called unconditionally (Rules of Hooks); each internally skips its
+  // fetch for an empty symbol list.
+  const { livePrices: liveStockPrices } = useLivePsxPrices(assetClass === "stock" ? symbols : []);
+  const { livePrices: liveCryptoPrices } = useLiveCryptoPrices(assetClass === "crypto" ? symbols : []);
+  const currentPrices = assetClass === "stock" ? liveStockPrices : liveCryptoPrices;
+
   function handleDownload() {
     if (!transactions || transactions.length === 0) {
       toast.error("Nothing to export yet.");
       return;
     }
-    exportHoldingsPdf(transactions, assetClass, { currency, convertAmount });
+    exportHoldingsPdf(transactions, assetClass, { currency, convertAmount, currentPrices });
     toast.success("Holdings PDF downloaded");
   }
 

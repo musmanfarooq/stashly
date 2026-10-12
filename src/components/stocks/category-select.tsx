@@ -13,6 +13,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useAddCategoryMutation, useGetCategoriesQuery } from "@/store/api/categoriesApi";
+import { useAppSelector } from "@/store/hooks";
 
 const ADD_NEW_VALUE = "__add_new__";
 
@@ -22,15 +23,17 @@ interface CategorySelectProps {
   onChange: (value: string) => void;
 }
 
+/** Types are global and admin-managed (3.x) — only an admin sees the "Add new type" option; everyone else gets a read-only picker over the shared list. */
 export function CategorySelect({ userId, value, onChange }: CategorySelectProps) {
-  const { data: categories = [], isLoading } = useGetCategoriesQuery(userId);
+  const isAdmin = useAppSelector((state) => state.auth.user?.isAdmin ?? false);
+  const { data: categories = [], isLoading } = useGetCategoriesQuery();
   const [addCategory, { isLoading: isAdding }] = useAddCategoryMutation();
   const [isCreating, setIsCreating] = useState(false);
   const [newName, setNewName] = useState("");
 
   async function handleCreate() {
     try {
-      const created = await addCategory({ userId, name: newName }).unwrap();
+      const created = await addCategory({ createdBy: userId, name: newName }).unwrap();
       onChange(created.name);
       toast.success(`Added "${created.name}" to types`);
       setIsCreating(false);
@@ -40,7 +43,7 @@ export function CategorySelect({ userId, value, onChange }: CategorySelectProps)
     }
   }
 
-  if (isCreating) {
+  if (isCreating && isAdmin) {
     return (
       <div className="flex gap-2">
         <Input
@@ -93,10 +96,12 @@ export function CategorySelect({ userId, value, onChange }: CategorySelectProps)
             {category.name}
           </SelectItem>
         ))}
-        <SelectItem value={ADD_NEW_VALUE}>
-          <PlusCircle className="size-4" />
-          Add new type
-        </SelectItem>
+        {isAdmin && (
+          <SelectItem value={ADD_NEW_VALUE}>
+            <PlusCircle className="size-4" />
+            Add new type
+          </SelectItem>
+        )}
       </SelectContent>
     </Select>
   );

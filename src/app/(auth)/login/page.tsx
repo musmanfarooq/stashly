@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { LogIn } from "lucide-react";
+import { Loader2, LogIn } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { signInWithGoogle } from "@/services/firebase/auth";
@@ -23,16 +23,26 @@ export default function LoginPage() {
     setIsSigningIn(true);
     try {
       await signInWithGoogle();
-      toast.success("Signed in successfully");
+      // Left true: the auth-state listener still needs to update Redux and
+      // the effect above still needs to redirect, so the loader below stays
+      // up to cover that gap instead of flashing the button back first.
     } catch {
       toast.error("Sign-in failed. Please try again.");
-    } finally {
       setIsSigningIn(false);
     }
   }
 
   if (initialized && user) {
     return null;
+  }
+
+  if (isSigningIn) {
+    return (
+      <div className="flex h-dvh w-full flex-col items-center justify-center gap-3 bg-background px-4">
+        <Loader2 className="size-8 animate-spin text-primary" />
+        <p className="text-sm text-muted-foreground">Signing you in...</p>
+      </div>
+    );
   }
 
   return (
@@ -44,9 +54,9 @@ export default function LoginPage() {
             Track your stock and crypto portfolio.
           </p>
         </div>
-        <Button className="w-full gap-2" onClick={handleSignIn} disabled={isSigningIn}>
+        <Button className="w-full gap-2" onClick={handleSignIn}>
           <LogIn className="size-4" />
-          {isSigningIn ? "Signing in..." : "Sign in with Google"}
+          Sign in with Google
         </Button>
       </div>
     </div>

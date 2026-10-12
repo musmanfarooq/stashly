@@ -13,6 +13,7 @@ interface UserDoc {
   photoURL: string | null;
   isAdmin: boolean;
   currency?: string;
+  canDeleteHoldings?: boolean;
   lastLoginAt: Timestamp;
   createdAt: Timestamp;
 }
@@ -25,6 +26,7 @@ function toAppUser(data: UserDoc): AppUser {
     photoURL: data.photoURL,
     isAdmin: data.isAdmin,
     currency: data.currency && isSupportedCurrency(data.currency) ? data.currency : DEFAULT_CURRENCY,
+    canDeleteHoldings: data.canDeleteHoldings === true,
     lastLoginAt: data.lastLoginAt.toMillis(),
     createdAt: data.createdAt.toMillis(),
   };
@@ -51,7 +53,14 @@ export async function recordSignIn(user: User): Promise<AppUser> {
 
   const data: UserDoc = snapshot.exists()
     ? { ...(snapshot.data() as UserDoc), ...baseFields(user), lastLoginAt: now }
-    : { ...baseFields(user), isAdmin: false, currency: DEFAULT_CURRENCY, lastLoginAt: now, createdAt: now };
+    : {
+        ...baseFields(user),
+        isAdmin: false,
+        currency: DEFAULT_CURRENCY,
+        canDeleteHoldings: false,
+        lastLoginAt: now,
+        createdAt: now,
+      };
 
   await setDoc(ref, data, { merge: true });
   return toAppUser(data);
@@ -73,4 +82,10 @@ export async function loadUserDoc(user: User): Promise<AppUser> {
 export async function updateUserCurrency(uid: string, currency: CurrencyCode): Promise<void> {
   const ref = doc(db, "users", uid);
   await setDoc(ref, { currency }, { merge: true });
+}
+
+/** Toggles whether the user is allowed to delete untouched buy lots — never touches isAdmin. */
+export async function updateUserCanDeleteHoldings(uid: string, canDeleteHoldings: boolean): Promise<void> {
+  const ref = doc(db, "users", uid);
+  await setDoc(ref, { canDeleteHoldings }, { merge: true });
 }
