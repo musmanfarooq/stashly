@@ -27,10 +27,12 @@ service cloud.firestore {
     // USERS — each user reads/writes only their own doc.
     // isAdmin can never be set or changed by the client; only via the
     // Firebase console (2.1), which uses the Admin SDK and bypasses these rules.
+    // A new user doc must start with delete access enabled by default.
     match /users/{userId} {
       allow read: if isOwner(userId);
       allow create: if isOwner(userId)
-                    && request.resource.data.isAdmin == false;
+                    && request.resource.data.isAdmin == false
+                    && request.resource.data.canDeleteHoldings == true;
       allow update: if isOwner(userId)
                     && request.resource.data.isAdmin == resource.data.isAdmin;
       allow delete: if false;

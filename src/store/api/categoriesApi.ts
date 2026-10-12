@@ -1,9 +1,4 @@
-import {
-  addCategory,
-  deleteCategory,
-  fetchCategories,
-  migrateCategoriesToGlobal,
-} from "@/services/firebase/categories";
+import { addCategory, deleteCategory, fetchCategories } from "@/services/firebase/categories";
 import type { Category } from "@/types/category";
 import { baseApi } from "./baseApi";
 
@@ -44,22 +39,7 @@ export const categoriesApi = baseApi.injectEndpoints({
       },
       invalidatesTags: ["Types"],
     }),
-    migrateCategoriesToGlobal: builder.mutation<{ kept: number; removed: number }, string>({
-      queryFn: async (adminUid) => {
-        try {
-          return { data: await migrateCategoriesToGlobal(adminUid) };
-        } catch (error) {
-          return toQueryError(error);
-        }
-      },
-      invalidatesTags: ["Types"],
-    }),
   }),
 });
 
-export const {
-  useGetCategoriesQuery,
-  useAddCategoryMutation,
-  useDeleteCategoryMutation,
-  useMigrateCategoriesToGlobalMutation,
-} = categoriesApi;
+export const { useGetCategoriesQuery, useAddCategoryMutation, useDeleteCategoryMutation } = categoriesApi;

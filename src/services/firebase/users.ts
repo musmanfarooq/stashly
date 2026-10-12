@@ -57,7 +57,7 @@ export async function recordSignIn(user: User): Promise<AppUser> {
         ...baseFields(user),
         isAdmin: false,
         currency: DEFAULT_CURRENCY,
-        canDeleteHoldings: false,
+        canDeleteHoldings: true,
         lastLoginAt: now,
         createdAt: now,
       };

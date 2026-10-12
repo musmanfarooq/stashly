@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -16,15 +15,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { DeleteCategoryDialog } from "@/components/settings/delete-category-dialog";
 import { CURRENCY_LABELS, SUPPORTED_CURRENCIES, type CurrencyCode } from "@/lib/currency";
 import { updateUserCanDeleteHoldings, updateUserCurrency } from "@/services/firebase/users";
 import { setUser } from "@/features/auth/authSlice";
-import {
-  useAddCategoryMutation,
-  useDeleteCategoryMutation,
-  useGetCategoriesQuery,
-  useMigrateCategoriesToGlobalMutation,
-} from "@/store/api/categoriesApi";
+import { useAddCategoryMutation, useGetCategoriesQuery } from "@/store/api/categoriesApi";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 
 export default function SettingsPage() {
@@ -36,8 +31,6 @@ export default function SettingsPage() {
 
   const { data: categories = [] } = useGetCategoriesQuery(undefined, { skip: !user?.isAdmin });
   const [addCategory, { isLoading: isAddingType }] = useAddCategoryMutation();
-  const [deleteCategory, { isLoading: isDeletingType }] = useDeleteCategoryMutation();
-  const [migrateCategories, { isLoading: isMigrating }] = useMigrateCategoriesToGlobalMutation();
 
   if (!user) return null;
 
@@ -78,25 +71,6 @@ export default function SettingsPage() {
       setNewTypeName("");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to add type.");
-    }
-  }
-
-  async function handleDeleteType(id: string, name: string) {
-    try {
-      await deleteCategory(id).unwrap();
-      toast.success(`Removed "${name}"`);
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to remove type.");
-    }
-  }
-
-  async function handleMigrateTypes() {
-    if (!user) return;
-    try {
-      const { kept, removed } = await migrateCategories(user.uid).unwrap();
-      toast.success(`Consolidated to ${kept} type(s), cleaned up ${removed} old record(s)`);
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Migration failed.");
     }
   }
 
@@ -169,15 +143,7 @@ export default function SettingsPage() {
               {categories.map((category) => (
                 <Badge key={category.id} variant="secondary" className="gap-1 pr-1">
                   {category.name}
-                  <button
-                    type="button"
-                    aria-label={`Remove ${category.name}`}
-                    className="hover:cursor-pointer rounded-full p-0.5 hover:bg-background/50"
-                    disabled={isDeletingType}
-                    onClick={() => handleDeleteType(category.id, category.name)}
-                  >
-                    <Trash2 className="size-3" />
-                  </button>
+                  <DeleteCategoryDialog categoryId={category.id} categoryName={category.name} />
                 </Badge>
               ))}
             </div>
@@ -196,15 +162,6 @@ export default function SettingsPage() {
               <Button type="button" onClick={handleAddType} disabled={isAddingType || !newTypeName.trim()}>
                 Add
               </Button>
-            </div>
-            <div className="border-t border-border pt-3">
-              <Button type="button" variant="outline" onClick={handleMigrateTypes} disabled={isMigrating}>
-                {isMigrating ? "Migrating..." : "Consolidate legacy per-user types (run once)"}
-              </Button>
-              <p className="mt-2 text-xs text-muted-foreground">
-                One-time cleanup: collapses every user&apos;s old private type list into this
-                single shared list, deduped by name. Safe to run more than once.
-              </p>
             </div>
           </CardContent>
         </Card>

@@ -14,8 +14,7 @@ import type { Category } from "@/types/category";
 const DEFAULT_CATEGORIES = ["Oil", "IT", "Banks"];
 
 interface CategoryDoc {
-  userId?: string;
-  createdBy?: string;
+  createdBy: string;
   name: string;
   createdAt: Timestamp;
 }
@@ -24,7 +23,7 @@ function toCategory(id: string, data: CategoryDoc): Category {
   return {
     id,
     name: data.name,
-    createdBy: data.createdBy ?? data.userId ?? "unknown",
+    createdBy: data.createdBy,
     createdAt: data.createdAt.toMillis(),
   };
 }
@@ -81,54 +80,6 @@ export async function addCategory(createdBy: string, name: string): Promise<Cate
   });
 
   return { id: docRef.id, name: trimmed, createdBy, createdAt: Date.now() };
-}
-
-/**
- * One-time migration from the old per-user `types` model (every user had
- * their own private copy, seeded from the same 3 defaults plus whatever
- * they personally added) to the new global model. Reads every doc in the
- * collection regardless of owner, collapses duplicates by
- * case-insensitive name, writes one clean global doc per distinct name,
- * then deletes all the old per-user docs. Safe to run more than once —
- * a second run just finds the already-consolidated set and does nothing.
- * Admin-only, enforced by the `types` security rule (requires the global
- * read/write rule to already be deployed before running).
- */
-export async function migrateCategoriesToGlobal(adminUid: string): Promise<{ kept: number; removed: number }> {
-  const categoriesRef = collection(db, "types");
-  const snapshot = await getDocs(categoriesRef);
-
-  const byNameLower = new Map<string, CategoryDoc & { id: string }>();
-  for (const docSnap of snapshot.docs) {
-    const data = docSnap.data() as CategoryDoc;
-    const key = data.name.trim().toLowerCase();
-    if (!byNameLower.has(key)) {
-      byNameLower.set(key, { id: docSnap.id, ...data });
-    }
-  }
-
-  const batch = writeBatch(db);
-  const now = Timestamp.now();
-  let kept = 0;
-
-  for (const entry of byNameLower.values()) {
-    const ref = doc(categoriesRef);
-    batch.set(ref, {
-      name: entry.name.trim(),
-      createdBy: entry.createdBy ?? entry.userId ?? adminUid,
-      createdAt: entry.createdAt ?? now,
-    });
-    kept += 1;
-  }
-
-  let removed = 0;
-  for (const docSnap of snapshot.docs) {
-    batch.delete(doc(db, "types", docSnap.id));
-    removed += 1;
-  }
-
-  await batch.commit();
-  return { kept, removed };
 }
 
 export async function deleteCategory(id: string): Promise<void> {
